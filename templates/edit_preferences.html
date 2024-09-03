@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Preferences</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav>
+        <a href="/">
+            <img src="/static/Logo.png" alt="Logo" class="logo">
+        </a>
+        <ul class="navbar">
+            <li><a href="/">Upload & Predict</a></li>
+            <li><a href="/real_time">Real-Time Facial Recognition</a></li>
+            <li><a href="/edit_preferences">Edit Information</a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <form id="edit-form">
+        <h1>Edit Your Preferences</h1>
+
+        <label for="class_name">Class Name:</label>
+        <input type="text" id="class_name" name="class_name" required>
+
+        <label for="drink_preference">Drink Preference:</label>
+        <input type="text" id="drink_preference" name="drink_preference" required>
+
+        <label for="dietary_restrictions">Dietary Restrictions:</label>
+        <input type="text" id="dietary_restrictions" name="dietary_restrictions" required>
+
+        <button type="submit">Update Preferences</button>
+    </form>
+
+    <div id="update-result"></div>
+
+    <!--
+    <button onclick="window.location.href='/real_time';">Go to Real-Time Webcam</button>
+    <button onclick="window.location.href='/';">Go to Image Upload</button>
+    -->
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $("#edit-form").on("submit", function(event) {
+                event.preventDefault(); // Prevent the form from submitting normally
+
+                var formData = {
+                    class_name: $("#class_name").val(),
+                    drink_preference: $("#drink_preference").val(),
+                    dietary_restrictions: $("#dietary_restrictions").val()
+                };
+
+                $.ajax({
+                    url: "/update_preferences",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify(formData),
+                    success: function(response) {
+                        $("#update-result").text("Preferences updated successfully!");
+                    },
+                    error: function(xhr) {
+                        $("#update-result").text("Error updating preferences: " + xhr.responseText);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

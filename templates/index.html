@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Image Classification</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav>
+        <a href="/">
+            <img src="/static/Logo.png" alt="Logo" class="logo">
+        </a>
+        <ul class="navbar">
+            <li><a href="/">Upload & Predict</a></li>
+            <li><a href="/real_time">Real-Time Facial Recognition</a></li>
+            <li><a href="/edit_preferences">Edit Information</a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <form id="upload-form" enctype="multipart/form-data">
+        <h1>Staff Image Classification</h1>
+        <label for="class_name">Class Name:</label>
+        <input type="text" id="class_name" name="class_name" required>
+
+        <label for="drink_preference">Drink Preference:</label>
+        <input type="text" id="drink_preference" name="drink_preference">
+
+        <label for="dietary_restrictions">Dietary Restrictions:</label>
+        <input type="text" id="dietary_restrictions" name="dietary_restrictions">
+
+        <label for="file">Choose an image:</label>
+        <input type="file" id="file" name="file" accept="image/*" required>
+
+        <button type="submit">Upload and Predict</button>
+    </form>
+
+    <!-- Prediction Result Container -->
+    <div id="prediction-container">
+        <h2>Prediction:</h2>
+        <p id="prediction-result"></p>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $("#upload-form").on("submit", function(event) {
+                event.preventDefault(); // Prevent the form from submitting normally
+
+                var formData = new FormData(this);
+                $("#prediction-result").html("<p class='loading'>Processing your image...</p>");
+
+                $.ajax({
+                    url: "/",
+                    type: "POST",
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        // Poll for model readiness
+                        const checkStatus = function() {
+                            $.get("/status", function(statusResponse) {
+                                if (statusResponse.status === "ready") {
+                                    $.ajax({
+                                        url: "/",
+                                        type: "POST",
+                                        data: formData,
+                                        contentType: false,
+                                        processData: false,
+                                        success: function(predictionResponse) {
+                                            $("#prediction-result").html(
+                                                `<strong>Class:</strong> ${predictionResponse.predicted_class_name}<br>
+                                                <strong>Probability:</strong> ${predictionResponse.probability}<br>
+                                                <strong>Drink Preference:</strong> ${predictionResponse.drink_preference}<br>
+                                                <strong>Dietary Restrictions:</strong> ${predictionResponse.dietary_restrictions}`
+                                            );
+                                        },
+                                        error: function(xhr) {
+                                            $("#prediction-result").html("Error in prediction: " + xhr.responseText);
+                                        }
+                                    });
+                                } else {
+                                    setTimeout(checkStatus, 1000);
+                                }
+                            });
+                        };
+
+                        checkStatus();
+                    },
+                    error: function(xhr) {
+                        $("#prediction-result").html("Error in processing: " + xhr.responseText);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

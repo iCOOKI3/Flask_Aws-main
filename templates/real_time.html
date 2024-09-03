@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Face Recognition</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        /* Additional styles for the container */
+        #container {
+            max-width: 700px;
+            margin: 0 auto;
+            text-align: center;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        #result {
+            margin-top: 20px;
+            background-color: #f4f4f9;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav>
+        <a href="/">
+            <img src="/static/Logo.png" alt="Logo" class="logo">
+        </a>
+        <ul class="navbar">
+            <li><a href="/">Upload & Predict</a></li>
+            <li><a href="/real_time">Real-Time Facial Recognition</a></li>
+            <li><a href="/edit_preferences">Edit Information</a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <div id="container">
+        <h1>Real-Time Face Recognition</h1>
+        <video id="video" width="640" height="480" autoplay></video>
+        <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const resultDiv = document.getElementById('result');
+        const context = canvas.getContext('2d');
+
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                video.srcObject = stream;
+                video.play();
+            })
+            .catch(err => {
+                console.error('Error accessing camera: ', err);
+                resultDiv.innerHTML = `<p>Error accessing camera: ${err.message}</p>`;
+            });
+
+        async function captureFrame() {
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob(async (blob) => {
+                const formData = new FormData();
+                formData.append('file', blob, 'frame.jpg');
+
+                try {
+                    const response = await fetch('/real_time', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+
+                    if (data.class_name) {
+                        resultDiv.innerHTML = `<p><strong>Class:</strong> ${data.class_name}</p>
+                                               <p><strong>Drink Preference:</strong> ${data.drink_preference}</p>
+                                               <p><strong>Dietary Restrictions:</strong> ${data.dietary_restrictions}</p>`;
+                    } else {
+                        resultDiv.innerHTML = `<p>Error: ${data.error}</p>`;
+                    }
+                } catch (error) {
+                    resultDiv.innerHTML = `<p>Error in prediction: ${error.message}</p>`;
+                }
+            }, 'image/jpeg');
+        }
+
+        setInterval(captureFrame, 1000);
+    </script>
+</body>
+</html>
